@@ -1,0 +1,82 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<body class="bg-gray-100">
+  <div class="min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-96">
+      <h1 class="text-3xl font-bold mb-6 text-center">MTG Land Calculator</h1>
+      <div class="mb-4">
+        <label for="landsInDeck" class="text-sm mb-1 block">Number of Lands in Your Deck:</label>
+        <input type="number" id="landsInDeck" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring focus:ring-blue-200 focus:border-blue-300" min="0" max="60" step="1" value="24">
+      </div>
+      <div class="mb-6">
+        <label for="handSize" class="text-sm mb-1 block">Hand Size:</label>
+        <input type="range" id="handSize" min="1" max="7" step="1" value="7" class="w-full">
+        <span id="handSizeValue" class="text-sm text-gray-600">Hand Size: 7</span>
+      </div>
+      <button onclick="calculateProbabilities()" class="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:ring focus:ring-blue-200 focus:outline-none">Calculate</button>
+      <div id="results" class="mt-6"></div>
+    </div>
+  </div>
+  <script>
+    function choose(n, k) {
+      if (k === 0) return 1;
+      return (n * choose(n - 1, k - 1)) / k;
+    }
+
+    function mtgLandProbability(landsInDeck, handSize) {
+      const totalCards = 60;
+      const probabilities = [];
+
+      for (let k = 0; k <= handSize; k++) {
+        const numerator = choose(landsInDeck, k) * choose(totalCards - landsInDeck, handSize - k);
+        const denominator = choose(totalCards, handSize);
+        const probability = numerator / denominator;
+        probabilities.push(probability);
+      }
+
+      return probabilities;
+    }
+
+    function updateHandSizeValue() {
+      const handSizeValueSpan = document.getElementById("handSizeValue");
+      const handSizeRange = document.getElementById("handSize");
+      handSizeValueSpan.textContent = `Hand Size: ${handSizeRange.value}`;
+    }
+
+    function calculateProbabilities() {
+      const landsInDeck = parseInt(document.getElementById("landsInDeck").value, 10);
+      if (isNaN(landsInDeck) || landsInDeck < 0 || landsInDeck > 60) {
+        alert("Please enter a valid number of lands (0 to 60).");
+        return;
+      }
+
+      const handSizeRange = document.getElementById("handSize");
+      const handSize = parseInt(handSizeRange.value, 10);
+
+      const probabilities = mtgLandProbability(landsInDeck, handSize);
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = `<h2 class="text-xl font-semibold mb-4">Land Probabilities for ${handSize}-card Hand:</h2>`;
+
+      for (let k = 0; k < probabilities.length; k++) {
+        const probabilityPercentage = (probabilities[k] * 100).toFixed(2);
+        resultsDiv.innerHTML += `
+          <div class="flex items-center mb-2">
+            <div class="w-20 font-semibold text-gray-700">${k} land(s)</div>
+            <div class="flex-1 relative rounded-md overflow-hidden h-4 bg-gray-200">
+              <div class="absolute top-0 left-0 h-full bg-blue-500" style="width: ${probabilityPercentage}%;"></div>
+            </div>
+            <div class="w-14 pl-2">${probabilityPercentage}%</div>
+          </div>
+        `;
+      }
+
+      const expectedValue = (handSize * (landsInDeck / 60)).toFixed(2);
+      const standardDeviation = Math.sqrt(handSize * (landsInDeck / 60) * (1 - landsInDeck / 60)).toFixed(2);
+
+      resultsDiv.innerHTML += `<p class="text-sm mt-4">Expected Value (Mean): ${expectedValue} land(s)</p>`;
+      resultsDiv.innerHTML += `<p class="text-sm">Standard Deviation: ${standardDeviation} land(s)</p>`;
+    }
+
+    document.getElementById("handSize").addEventListener("input", updateHandSizeValue);
+  </script>
